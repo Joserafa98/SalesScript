@@ -1,33 +1,47 @@
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import time
 
+# --- Configuración ---
+# Coloca el número de teléfono con el código de país, sin el "+"
+# Ejemplo: "573001234567" para un número de Colombia
+numero_telefono = "34641716268" 
+
+# Mensaje que se enviará (opcional, se puede dejar vacío)
+mensaje_a_enviar = "Si lees este mensaje, significa que funciona el script" 
+
+# Crear el enlace wa.me con el número de teléfono y el mensaje
+wa_me_url = f"https://web.whatsapp.com/send/?phone={numero_telefono}&text={mensaje_a_enviar}"
 
 driver = webdriver.Chrome()
-
-print("WebDriver de Chrome iniciado.")
-
-print("Abriendo WhatsApp Web...")
 driver.get("https://web.whatsapp.com/")
 
-# --- Esperar Autenticación ---
-# Este tiempo es CRUCIAL para que puedas escanear el código QR con tu teléfono.
-# Ajusta este tiempo si necesitas más o menos.
-print("Por favor, escanea el código QR de WhatsApp Web con tu teléfono.")
-print("Tienes 60 segundos para hacerlo.")
-time.sleep(30) # Espera 60 segundos
+print("Por favor, escanea el código QR de WhatsApp Web. Tienes 40 segundos.")
+time.sleep(40) # Dale tiempo para escanear
 
-print("¡WhatsApp Web debería estar abierto y conectado!")
+# Navegar a la URL wa.me para abrir el chat
+print(f"Abriendo chat con el número {numero_telefono}...")
+driver.get(wa_me_url)
 
-# --- Mantener la ventana abierta por un tiempo (opcional) ---
-# Puedes descomentar la siguiente línea si quieres que la ventana permanezca abierta
-# después de que el script parezca haber terminado, para que puedas verla.
-time.sleep(10) # Mantiene la ventana abierta 10 segundos más
+try:
+    # Espera explícita para que el campo de texto del chat sea visible
+    wait = WebDriverWait(driver, 10)
+    # Busca el campo de texto. El 'data-testid' puede cambiar con las actualizaciones.
+    # El selector 'p[class="selectable-text"]' es una alternativa si el anterior falla.
+    input_box = wait.until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, 'div[data-testid="attached-text-input-container"] p[class*="selectable-text"]'))
+    )
+    
+    print("Campo de texto del chat encontrado. Listo para escribir.")
 
-# --- Cerrar el Navegador ---
-# Una vez que termines de interactuar o para finalizar el script, descomenta la línea de abajo.
-# driver.quit()
-# print("Navegador cerrado.")
+except Exception as e:
+    print(f"Ocurrió un error: {e}")
+    print("No se pudo encontrar el campo de texto. Es posible que el número no sea válido o que el selector haya cambiado.")
+    # El script termina aquí si hay un error
 
-print("Script de apertura de WhatsApp Web finalizado.")
+print("Script finalizado. Manteniendo el navegador abierto. Presiona Ctrl+C en la terminal para cerrar.")
+while True:
+    time.sleep(1)
