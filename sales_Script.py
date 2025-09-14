@@ -21,11 +21,24 @@ mensajes = [
     "¡Hola! Espero que estés teniendo un buen día 😊",
     "¡Saludos! Quería enviarte este mensaje de prueba. 🧐"
 ]  # Varias opciones de mensajes para variar
+contactos = [
+    "34641716268",
+    "50766365572",
+    "50760312294",
+    "50767494746"
+]  # Lista de contactos con código de país
+
+mensajes = [
+    "Hola, esto es un mensaje de prueba. ¿Cómo estás?😍",
+    "¡Hola! Espero que estés teniendo un buen día 😊",
+    "¡Saludos! Quería enviarte este mensaje de prueba. 🧐"
+]  # Varias opciones de mensajes para variar
 
 driver = webdriver.Chrome()
 driver.get("https://web.whatsapp.com/")
 
 print("Por favor, escanea el código QR de WhatsApp Web. Tienes 40 segundos.")
+time.sleep(40)  # Tiempo para escanear el QR
 time.sleep(40)  # Tiempo para escanear el QR
 
 wait = WebDriverWait(driver, 20)
@@ -95,4 +108,7 @@ for numero_telefono in contactos:
 
 print("Todos los mensajes han sido procesados.")
 time.sleep(3)
+print("Todos los mensajes han sido procesados.")
+time.sleep(3)
 driver.quit()
+
