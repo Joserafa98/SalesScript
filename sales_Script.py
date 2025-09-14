@@ -15,9 +15,9 @@ contactos = [
 ]  # Lista de contactos con código de país
 
 mensajes = [
-    "Hola, esto es un mensaje de prueba. ¿Cómo estás?",
+    "Hola, esto es un mensaje de prueba. ¿Cómo estás?😍",
     "¡Hola! Espero que estés teniendo un buen día 😊",
-    "¡Saludos! Quería enviarte este mensaje de prueba."
+    "¡Saludos! Quería enviarte este mensaje de prueba. 🧐"
 ]  # Varias opciones de mensajes para variar
 
 driver = webdriver.Chrome()
@@ -28,19 +28,24 @@ time.sleep(40)  # Tiempo para escanear el QR
 
 wait = WebDriverWait(driver, 20)
 
+ultimo_mensaje = None  # Guardará el último mensaje enviado
+
 for numero_telefono in contactos:
     try:
         print(f"Abriendo chat con el número {numero_telefono}...")
         wa_me_url = f"https://web.whatsapp.com/send/?phone={numero_telefono}"
         driver.get(wa_me_url)
 
-        # Esperar a que aparezca el input del chat
         input_box = wait.until(
             EC.presence_of_element_located((By.XPATH, '//div[@contenteditable="true"][@data-tab="10"]'))
         )
 
-        # Elegir un mensaje aleatorio de la lista
+        # --- Elegir mensaje aleatorio distinto al último ---
         mensaje_a_enviar = random.choice(mensajes)
+        while mensaje_a_enviar == ultimo_mensaje and len(mensajes) > 1:
+            mensaje_a_enviar = random.choice(mensajes)
+
+        ultimo_mensaje = mensaje_a_enviar
 
         print(f"Escribiendo mensaje a {numero_telefono}...")
         for caracter in mensaje_a_enviar:
@@ -69,7 +74,7 @@ for numero_telefono in contactos:
             print("Mensaje enviado con ENTER ✅")
 
         # --- Espera aleatoria entre contactos ---
-        wait_time = random.uniform(2, 5)  # Entre 2 y 5 segundos
+        wait_time = random.uniform(25, 40)  # Entre 2 y 5 segundos
         print(f"Esperando {wait_time:.2f} segundos antes del siguiente contacto...")
         time.sleep(wait_time)
 
