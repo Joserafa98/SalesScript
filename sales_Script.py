@@ -13,7 +13,7 @@ import os
 # --- Configuración del script ---
 contactos = [
     "34641716268",
-    "50766365572",
+    "50766365572", 
     "50760312294",
     "50767494746"
 ]
@@ -75,55 +75,78 @@ for numero_telefono in contactos:
             print(f"No se pudo cargar el chat para {numero_telefono}. Saltando...")
             continue
 
-        # --- PRIMERO: Enviar la imagen ---
+        # --- PRIMERO: Enviar la imagen como imagen (no como archivo) ---
         try:
-            # Pulsar botón adjuntar
+            # Buscar el botón de adjuntar
             clip_button = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, '//div[@title="Adjuntar" or @aria-label="Adjuntar"]'))
             )
             clip_button.click()
             time.sleep(1)
             
-            # Subir imagen
-            file_input = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, '//input[@type="file" and @accept="image/*,video/mp4,video/3gpp,video/quicktime"]'))
-            )
-            file_input.send_keys(os.path.abspath(ruta_imagen))
+            # Buscar específicamente la opción de "Fotos y videos"
+            try:
+                photo_option = WebDriverWait(driver, 5).until(
+                    EC.element_to_be_clickable((By.XPATH, '//div[@aria-label="Fotos y videos"] | //span[contains(text(), "Fotos")] | //div[contains(@data-icon, "image")]'))
+                )
+                photo_option.click()
+                time.sleep(1)
+            except:
+                print("No se encontró la opción específica de Fotos y videos, usando método general...")
             
-            # Esperar a que cargue la vista previa
+            # Buscar el input de archivo específico para imágenes
+            file_input = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, '//input[@type="file" and contains(@accept, "image")]'))
+            )
+            
+            # Enviar la ruta absoluta de la imagen
+            abs_path = os.path.abspath(ruta_imagen)
+            file_input.send_keys(abs_path)
+            
+            # Esperar a que la imagen se cargue y muestre la previsualización
             time.sleep(3)
             
-            # Enviar imagen sin texto
-            send_button = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, '//span[@data-icon="send"]'))
-            )
-            send_button.click()
-            print("Imagen enviada ✅")
-            time.sleep(2)  # Esperar a que se envíe la imagen
+            # Verificar que se muestra la previsualización de la imagen
+            try:
+                preview = WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located((By.XPATH, '//img[contains(@src, "blob:")] | //div[contains(@class, "preview")] | //div[contains(@class, "image")]'))
+                )
+                print("Vista previa de imagen cargada correctamente ✅")
+            except:
+                print("No se pudo verificar la vista previa, pero continuando...")
+            
+            # Enviar la imagen - probar múltiples métodos
+            try:
+                # Método 1: Botón de enviar normal
+                send_button = WebDriverWait(driver, 5).until(
+                    EC.element_to_be_clickable((By.XPATH, '//span[@data-icon="send"]'))
+                )
+                send_button.click()
+                print("Imagen enviada con botón normal ✅")
+            except:
+                try:
+                    # Método 2: JavaScript click
+                    send_button = driver.find_element(By.XPATH, '//span[@data-icon="send"]')
+                    driver.execute_script("arguments[0].click();", send_button)
+                    print("Imagen enviada con JavaScript ✅")
+                except:
+                    try:
+                        # Método 3: Tecla ENTER
+                        from selenium.webdriver.common.action_chains import ActionChains
+                        actions = ActionChains(driver)
+                        actions.send_keys(Keys.ENTER).perform()
+                        print("Imagen enviada con ENTER ✅")
+                    except Exception as e:
+                        print(f"Error al enviar imagen: {e}")
+                        raise
+            
+            time.sleep(2)
             
         except Exception as e:
             print(f"Error al enviar la imagen: {e}")
-            # Intentar cerrar cualquier panel abierto
-            try:
-                driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.ESCAPE)
-                time.sleep(1)
-            except:
-                pass
-            continue
-
-        # --- Cerrar cualquier panel abierto ---
-        try:
-            # Intentar cerrar el panel de adjuntar presionando ESC
-            driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.ESCAPE)
-            time.sleep(1)
-            
-            # Hacer clic en un área neutral para asegurar que el panel se cierra
-            header = driver.find_element(By.XPATH, '//header')
-            header.click()
-            time.sleep(1)
-        except:
-            pass
-
+            # Si falla el envío de imagen, continuar con solo texto
+            print("Continuando con solo mensaje de texto...")
+        
         # --- SEGUNDO: Enviar el texto como mensaje separado ---
         try:
             # Elegir mensaje aleatorio
@@ -133,12 +156,15 @@ for numero_telefono in contactos:
                 mensaje_a_enviar = mensajes[0]
             ultimo_mensaje = mensaje_a_enviar
 
-            # Localizar el cuadro de texto normal del chat
+            # Esperar a que el chat esté listo para escribir
+            time.sleep(2)
+            
+            # Localizar el cuadro de texto
             text_box = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, '//div[@contenteditable="true"][@data-tab="10"]'))
             )
             
-            # Usar JavaScript para hacer clic si es necesario
+            # Hacer clic con JavaScript para evitar interceptación
             driver.execute_script("arguments[0].click();", text_box)
             time.sleep(0.5)
             
