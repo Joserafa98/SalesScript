@@ -71,6 +71,53 @@ ultimo_mensaje = None
 # Detectar tecla de pegar según sistema operativo
 paste_key = Keys.COMMAND if platform.system() == "Darwin" else Keys.CONTROL
 
+# --- FUNCIÓN FINAL PARA ENVIAR STICKER ---
+def enviar_sticker():
+    try:
+        print("Intentando enviar sticker...")
+        
+        # 1. Abrir panel principal
+        sticker_btn = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, 'div[aria-label="Emojis, GIF, Stickers"]'))
+        )
+        sticker_btn.click()
+        print("Panel principal abierto ✅")
+        time.sleep(2)
+        
+        # 2. Seleccionar pestaña de stickers
+        tab_stickers = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[aria-label="Selector de stickers"]'))
+        )
+        tab_stickers.click()
+        print("Pestaña de stickers seleccionada ✅")
+        time.sleep(3)
+        
+        # 3. Buscar TODOS los contenedores de stickers y seleccionar el SEGUNDO (índice 1)
+        sticker_containers = WebDriverWait(driver, 10).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div._alpu._ahra._asaf'))
+        )
+        
+        print(f"Se encontraron {len(sticker_containers)} contenedores de stickers")
+        
+        if len(sticker_containers) > 1:
+            # Seleccionar el SEGUNDO contenedor (índice 1) - el primero es "Crear sticker"
+            sticker_real = sticker_containers[1]
+            
+            # Encontrar el botón dentro del contenedor
+            sticker_button = sticker_real.find_element(By.CSS_SELECTOR, 'button')
+            sticker_button.click()
+            
+            print("✅ Segundo sticker enviado exitosamente")
+            time.sleep(2)
+            return True
+        else:
+            print("❌ No se encontraron suficientes stickers (solo está el de crear)")
+            return False
+        
+    except Exception as e:
+        print(f"❌ Error al enviar sticker: {e}")
+        return False
+
 for numero_telefono in contactos:
     try:
         print(f"Abriendo chat con el número {numero_telefono}...")
@@ -303,6 +350,7 @@ for numero_telefono in contactos:
             
             # INTENTAR ENVIAR LA ENCUESTA CON MÚLTIPLES MÉTODOS
             print("Intentando enviar la encuesta...")
+            encuesta_enviada = False
             
             # Método 1: Buscar el botón de enviar por el data-icon específico
             try:
@@ -312,68 +360,91 @@ for numero_telefono in contactos:
                 driver.execute_script("arguments[0].click();", send_button)
                 print("Encuesta enviada con data-icon específico ✅")
                 time.sleep(2)
-                continue  # Continuar al siguiente contacto
+                encuesta_enviada = True
             except:
                 pass
             
             # Método 2: Buscar el botón por su clase específica (de las capturas)
-            try:
-                send_button = WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, '//div[contains(@class, "x1cb1130") and contains(@class, "x1wcu8xx") and contains(@class, "xs2xxs2")]'))
-                )
-                driver.execute_script("arguments[0].click();", send_button)
-                print("Encuesta enviada con clase específica ✅")
-                time.sleep(2)
-                continue
-            except:
-                pass
+            if not encuesta_enviada:
+                try:
+                    send_button = WebDriverWait(driver, 5).until(
+                        EC.element_to_be_clickable((By.XPATH, '//div[contains(@class, "x1cb1130") and contains(@class, "x1wcu8xx") and contains(@class, "xs2xxs2")]'))
+                    )
+                    driver.execute_script("arguments[0].click();", send_button)
+                    print("Encuesta enviada con clase específica ✅")
+                    time.sleep(2)
+                    encuesta_enviada = True
+                except:
+                    pass
             
             # Método 3: Buscar el botón por su aria-label
-            try:
-                send_button = WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, '//div[@aria-label="Enviar"]'))
-                )
-                driver.execute_script("arguments[0].click();", send_button)
-                print("Encuesta enviada con aria-label ✅")
-                time.sleep(2)
-                continue
-            except:
-                pass
+            if not encuesta_enviada:
+                try:
+                    send_button = WebDriverWait(driver, 5).until(
+                        EC.element_to_be_clickable((By.XPATH, '//div[@aria-label="Enviar"]'))
+                    )
+                    driver.execute_script("arguments[0].click();", send_button)
+                    print("Encuesta enviada con aria-label ✅")
+                    time.sleep(2)
+                    encuesta_enviada = True
+                except:
+                    pass
             
             # Método 4: Intentar con ENTER en el cuerpo del documento
-            try:
-                body = driver.find_element(By.TAG_NAME, 'body')
-                body.send_keys(Keys.ENTER)
-                print("Encuesta enviada con ENTER ✅")
-                time.sleep(2)
-                continue
-            except:
-                pass
+            if not encuesta_enviada:
+                try:
+                    body = driver.find_element(By.TAG_NAME, 'body')
+                    body.send_keys(Keys.ENTER)
+                    print("Encuesta enviada con ENTER ✅")
+                    time.sleep(2)
+                    encuesta_enviada = True
+                except:
+                    pass
             
             # Método 5: Intentar con JavaScript directo
-            try:
-                driver.execute_script("""
-                    var sendButton = document.querySelector('span[data-icon="wds-ic-send-filled"]');
-                    if (!sendButton) {
-                        sendButton = document.querySelector('div[aria-label="Enviar"]');
-                    }
-                    if (sendButton) {
-                        sendButton.click();
-                    }
-                """)
-                print("Encuesta enviada con JavaScript directo ✅")
-                time.sleep(2)
-                continue
-            except:
-                pass
+            if not encuesta_enviada:
+                try:
+                    driver.execute_script("""
+                        var sendButton = document.querySelector('span[data-icon="wds-ic-send-filled"]');
+                        if (!sendButton) {
+                            sendButton = document.querySelector('div[aria-label="Enviar"]');
+                        }
+                        if (sendButton) {
+                            sendButton.click();
+                        }
+                    """)
+                    print("Encuesta enviada con JavaScript directo ✅")
+                    time.sleep(2)
+                    encuesta_enviada = True
+                except:
+                    pass
             
-            print("No se pudo enviar la encuesta después de intentar todos los métodos")
+            if not encuesta_enviada:
+                print("No se pudo enviar la encuesta después de intentar todos los métodos")
+            
+            # --- ESPERA ALEATORIA DESPUÉS DE ENVIAR ENCUESTA ---
+            wait_time = random.uniform(25, 40)
+            print(f"Esperando {wait_time:.2f} segundos antes del siguiente contacto...")
+            time.sleep(wait_time)
             
         except Exception as e:
             print(f"Error al preparar la encuesta: {e}")
             # Continuar con el siguiente contacto aunque falle la encuesta
             pass
-
+       # --- Enviar sticker ---
+        try:
+            # Llamar a la función de enviar sticker
+            sticker_enviado = enviar_sticker()
+            if sticker_enviado:
+                print("Sticker enviado exitosamente ✅")
+            else:
+                print("No se pudo enviar el sticker, continuando...")
+            
+            time.sleep(2)
+            
+        except Exception as e:
+            print(f"Error al enviar sticker: {e}")
+            # Continuar aunque falle el sticker
         # --- Espera aleatoria entre contactos ---
         wait_time = random.uniform(25, 40)
         print(f"Esperando {wait_time:.2f} segundos antes del siguiente contacto...")
