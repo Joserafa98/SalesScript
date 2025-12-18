@@ -3,19 +3,14 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import time
 import random
 import pyperclip
 import platform
-import os
 
 # --- Configuración del script ---
 contactos = [
-    "34641716268",
-    "50766365572", 
-    "50760312294",
-    "50767494746"
+    
 ]
 
 mensajes = [
@@ -24,7 +19,7 @@ mensajes = [
     "¡Saludos! Quería enviarte este mensaje de prueba. 🧐"
 ]
 
-# Configuración de encuestas
+# --- Configuración de encuestas (TU CONTENIDO SE MANTIENE) ---
 encuestas = [
     {
         "pregunta": "¿Te gustó nuestro servicio?",
@@ -36,12 +31,7 @@ encuestas = [
     }
 ]
 
-ruta_imagen = "/Users/josehernandez/Downloads/Diseño sin título.png"
-if not os.path.exists(ruta_imagen):
-    print(f"Error: La imagen no existe en la ruta: {ruta_imagen}")
-    exit()
-
-# Configurar opciones de Chrome
+# --- Configurar opciones de Chrome ---
 options = webdriver.ChromeOptions()
 options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36")
 options.add_argument("--disable-blink-features=AutomationControlled")
@@ -51,401 +41,296 @@ options.add_experimental_option('useAutomationExtension', False)
 driver = webdriver.Chrome(options=options)
 driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-# Abrir WhatsApp Web
+# --- Abrir WhatsApp Web ---
 driver.get("https://web.whatsapp.com/")
-
 print("Por favor, escanea el código QR de WhatsApp Web. Tienes 60 segundos.")
-try:
-    WebDriverWait(driver, 60).until(
-        EC.presence_of_element_located((By.XPATH, '//div[@contenteditable="true"][@data-tab="3"]'))
-    )
-    print("QR escaneado correctamente. WhatsApp Web está listo.")
-except TimeoutException:
-    print("Tiempo de espera agotado para escanear el QR.")
-    driver.quit()
-    exit()
 
-wait = WebDriverWait(driver, 20)
+wait = WebDriverWait(driver, 60)
+wait.until(EC.presence_of_element_located((By.XPATH, '//div[@contenteditable="true"][@data-tab="3"]')))
+print("QR escaneado correctamente. WhatsApp Web está listo.")
+
 ultimo_mensaje = None
-
-# Detectar tecla de pegar según sistema operativo
 paste_key = Keys.COMMAND if platform.system() == "Darwin" else Keys.CONTROL
-
-# --- FUNCIÓN FINAL PARA ENVIAR STICKER ---
-def enviar_sticker():
-    try:
-        print("Intentando enviar sticker...")
-        
-        # 1. Abrir panel principal
-        sticker_btn = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, 'div[aria-label="Emojis, GIF, Stickers"]'))
-        )
-        sticker_btn.click()
-        print("Panel principal abierto ✅")
-        time.sleep(2)
-        
-        # 2. Seleccionar pestaña de stickers
-        tab_stickers = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[aria-label="Selector de stickers"]'))
-        )
-        tab_stickers.click()
-        print("Pestaña de stickers seleccionada ✅")
-        time.sleep(3)
-        
-        # 3. Buscar TODOS los contenedores de stickers y seleccionar el SEGUNDO (índice 1)
-        sticker_containers = WebDriverWait(driver, 10).until(
-            EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div._alpu._ahra._asaf'))
-        )
-        
-        print(f"Se encontraron {len(sticker_containers)} contenedores de stickers")
-        
-        if len(sticker_containers) > 1:
-            # Seleccionar el SEGUNDO contenedor (índice 1) - el primero es "Crear sticker"
-            sticker_real = sticker_containers[1]
-            
-            # Encontrar el botón dentro del contenedor
-            sticker_button = sticker_real.find_element(By.CSS_SELECTOR, 'button')
-            sticker_button.click()
-            
-            print("✅ Segundo sticker enviado exitosamente")
-            time.sleep(2)
-            return True
-        else:
-            print("❌ No se encontraron suficientes stickers (solo está el de crear)")
-            return False
-        
-    except Exception as e:
-        print(f"❌ Error al enviar sticker: {e}")
-        return False
 
 for numero_telefono in contactos:
     try:
         print(f"Abriendo chat con el número {numero_telefono}...")
         wa_me_url = f"https://web.whatsapp.com/send/?phone={numero_telefono}&text&type=phone_number&app_absent=0"
         driver.get(wa_me_url)
-        
-        # Esperar a que el chat cargue completamente
-        try:
-            chat_loaded = WebDriverWait(driver, 20).until(
-                EC.presence_of_element_located((By.XPATH, '//div[@contenteditable="true"][@data-tab="10"]'))
-            )
-            time.sleep(2)
-        except TimeoutException:
-            print(f"No se pudo cargar el chat para {numero_telefono}. Saltando...")
-            continue
+        time.sleep(5)
 
-        # --- PRIMERO: Enviar la imagen como imagen (no como archivo) ---
+        # --- ENVIAR TEXTO ---
         try:
-            # Buscar el botón de adjuntar
-            clip_button = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, '//div[@title="Adjuntar" or @aria-label="Adjuntar"]'))
-            )
-            clip_button.click()
-            time.sleep(1)
-            
-            # Buscar específicamente la opción de "Fotos y videos"
-            try:
-                photo_option = WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, '//div[@aria-label="Fotos y videos"] | //span[contains(text(), "Fotos")] | //div[contains(@data-icon, "image")]'))
-                )
-                photo_option.click()
-                time.sleep(1)
-            except:
-                print("No se encontró la opción específica de Fotos y videos, usando método general...")
-            
-            # Buscar el input de archivo específico para imágenes
-            file_input = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, '//input[@type="file" and contains(@accept, "image")]'))
-            )
-            
-            # Enviar la ruta absoluta de la imagen
-            abs_path = os.path.abspath(ruta_imagen)
-            file_input.send_keys(abs_path)
-            
-            # Esperar a que la imagen se cargue y muestre la previsualización
-            time.sleep(3)
-            
-            # Verificar que se muestra la previsualización de la imagen
-            try:
-                preview = WebDriverWait(driver, 5).until(
-                    EC.presence_of_element_located((By.XPATH, '//img[contains(@src, "blob:")] | //div[contains(@class, "preview")] | //div[contains(@class, "image")]'))
-                )
-                print("Vista previa de imagen cargada correctamente ✅")
-            except:
-                print("No se pudo verificar la vista previa, pero continuando...")
-            
-            # Enviar la imagen - probar múltiples métodos
-            try:
-                # Método 1: Botón de enviar normal
-                send_button = WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, '//span[@data-icon="send"]'))
-                )
-                send_button.click()
-                print("Imagen enviada con botón normal ✅")
-            except:
-                try:
-                    # Método 2: JavaScript click
-                    send_button = driver.find_element(By.XPATH, '//span[@data-icon="send"]')
-                    driver.execute_script("arguments[0].click();", send_button)
-                    print("Imagen enviada con JavaScript ✅")
-                except:
-                    try:
-                        # Método 3: Tecla ENTER
-                        from selenium.webdriver.common.action_chains import ActionChains
-                        actions = ActionChains(driver)
-                        actions.send_keys(Keys.ENTER).perform()
-                        print("Imagen enviada con ENTER ✅")
-                    except Exception as e:
-                        print(f"Error al enviar imagen: {e}")
-                        raise
-            
-            time.sleep(2)
-            
-        except Exception as e:
-            print(f"Error al enviar la imagen: {e}")
-            # Si falla el envío de imagen, continuar con solo texto
-            print("Continuando con solo mensaje de texto...")
-        
-        # --- SEGUNDO: Enviar el texto como mensaje separado ---
-        try:
-            # Elegir mensaje aleatorio
             if len(mensajes) > 1:
                 mensaje_a_enviar = random.choice([m for m in mensajes if m != ultimo_mensaje])
             else:
                 mensaje_a_enviar = mensajes[0]
+
             ultimo_mensaje = mensaje_a_enviar
 
-            # Esperar a que el chat esté listo para escribir
-            time.sleep(2)
-            
-            # Localizar el cuadro de texto
-            text_box = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, '//div[@contenteditable="true"][@data-tab="10"]'))
+            text_box = WebDriverWait(driver, 20).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, 'div[contenteditable="true"][data-tab="10"]'))
             )
-            
-            # Hacer clic con JavaScript para evitar interceptación
             driver.execute_script("arguments[0].click();", text_box)
             time.sleep(0.5)
-            
-            # Escribir carácter por carácter con efecto de typeo
+
             print(f"Escribiendo mensaje a {numero_telefono}...")
             for caracter in mensaje_a_enviar:
                 pyperclip.copy(caracter)
                 text_box.send_keys(paste_key, 'v')
                 time.sleep(random.uniform(0.05, 0.2))
-                
-            # Enviar mensaje de texto
+
             text_box.send_keys(Keys.ENTER)
             print("Mensaje de texto enviado ✅")
-            
+            time.sleep(2)
+
         except Exception as e:
             print(f"Error al enviar el texto: {e}")
             continue
 
-        # --- TERCERO: Enviar encuesta ---
+        # --- ENVIAR ENCUESTA (VERSIÓN ACTUALIZADA 2025) ---
         try:
-            # Elegir encuesta aleatoria
             encuesta = random.choice(encuestas)
             print(f"Preparando encuesta: {encuesta['pregunta']}")
             
-            # Hacer clic en el botón de adjuntar
-            clip_button = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, '//div[@title="Adjuntar" or @aria-label="Adjuntar"]'))
-            )
-            clip_button.click()
-            time.sleep(1)
-            
-            # Buscar y hacer clic en la opción de encuesta
+            # 1. Abrir menú de adjuntos - SELECTORES ACTUALES
             try:
-                poll_option = WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, '//div[@aria-label="Encuesta"] | //span[contains(text(), "Encuesta")] | //div[contains(@data-icon, "poll")]'))
+                # Selector 1: Por data-testid (actual)
+                attach_button = WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, 'span[data-testid="conversation-menu"]'))
                 )
-                poll_option.click()
-                time.sleep(2)
-            except Exception as e:
-                print(f"No se pudo encontrar la opción de encuesta: {e}")
-                continue
-            
-            # Escribir la pregunta de la encuesta
-            try:
-                question_box = WebDriverWait(driver, 10).until(
-                    EC.element_to_be_clickable((By.XPATH, '//div[@contenteditable="true"][@data-tab]'))
-                )
-                
-                # Escribir la pregunta carácter por carácter
-                print("Escribiendo pregunta de la encuesta...")
-                for caracter in encuesta['pregunta']:
-                    pyperclip.copy(caracter)
-                    question_box.send_keys(paste_key, 'v')
-                    time.sleep(random.uniform(0.05, 0.2))
-                
-                time.sleep(1)
-            except Exception as e:
-                print(f"Error al escribir la pregunta: {e}")
-                continue
-            
-            # Escribir las opciones de la encuesta
-            for i, opcion in enumerate(encuesta['opciones']):
-                try:
-                    # Buscar el campo de opción usando múltiples selectores
-                    option_xpaths = [
-                        f'(//div[@contenteditable="true"])[{i+2}]',  # El índice 1 es la pregunta, 2+ son opciones
-                        f'//div[@contenteditable="true"][contains(@aria-label, "Opción")]',
-                        f'//div[contains(@class, "selectable-text")][@contenteditable="true"]'
-                    ]
-                    
-                    option_box = None
-                    for xpath in option_xpaths:
-                        try:
-                            option_box = WebDriverWait(driver, 3).until(
-                                EC.element_to_be_clickable((By.XPATH, xpath))
-                            )
-                            break
-                        except:
-                            continue
-                    
-                    if option_box is None:
-                        print(f"No se pudo encontrar el campo para la opción {i+1}")
-                        continue
-                    
-                    # Hacer clic en el campo de opción
-                    option_box.click()
-                    time.sleep(0.5)
-                    
-                    # Limpiar el campo si tiene texto preexistente
-                    option_box.send_keys(Keys.COMMAND + "a") if platform.system() == "Darwin" else option_box.send_keys(Keys.CONTROL + "a")
-                    option_box.send_keys(Keys.DELETE)
-                    time.sleep(0.5)
-                    
-                    # Escribir la opción
-                    print(f"Escribiendo opción {i+1}...")
-                    for caracter in opcion:
-                        pyperclip.copy(caracter)
-                        option_box.send_keys(paste_key, 'v')
-                        time.sleep(random.uniform(0.05, 0.2))
-                    
-                    time.sleep(1)
-                    
-                    # Si es la última opción, no añadir más
-                    if i < len(encuesta['opciones']) - 1:
-                        try:
-                            # Buscar el botón "Añadir opción"
-                            add_option_btn = WebDriverWait(driver, 3).until(
-                                EC.element_to_be_clickable((By.XPATH, '//div[contains(text(), "Añadir opción")] | //button[contains(text(), "Añadir")] | //div[@aria-label="Añadir opción"]'))
-                            )
-                            add_option_btn.click()
-                            time.sleep(1)
-                        except:
-                            print("No se pudo encontrar el botón para añadir opciones")
-                            # Intentar método alternativo: presionar Tab para crear nueva opción
-                            try:
-                                option_box.send_keys(Keys.TAB)
-                                time.sleep(1)
-                            except:
-                                break
-                            
-                except Exception as e:
-                    print(f"Error al escribir la opción {i+1}: {e}")
-                    continue
-            
-            # INTENTAR ENVIAR LA ENCUESTA CON MÚLTIPLES MÉTODOS
-            print("Intentando enviar la encuesta...")
-            encuesta_enviada = False
-            
-            # Método 1: Buscar el botón de enviar por el data-icon específico
-            try:
-                send_button = WebDriverWait(driver, 10).until(
-                    EC.element_to_be_clickable((By.XPATH, '//span[@data-icon="wds-ic-send-filled"]'))
-                )
-                driver.execute_script("arguments[0].click();", send_button)
-                print("Encuesta enviada con data-icon específico ✅")
-                time.sleep(2)
-                encuesta_enviada = True
+                attach_button.click()
             except:
-                pass
-            
-            # Método 2: Buscar el botón por su clase específica (de las capturas)
-            if not encuesta_enviada:
                 try:
-                    send_button = WebDriverWait(driver, 5).until(
-                        EC.element_to_be_clickable((By.XPATH, '//div[contains(@class, "x1cb1130") and contains(@class, "x1wcu8xx") and contains(@class, "xs2xxs2")]'))
-                    )
-                    driver.execute_script("arguments[0].click();", send_button)
-                    print("Encuesta enviada con clase específica ✅")
-                    time.sleep(2)
-                    encuesta_enviada = True
+                    # Selector 2: Por aria-label
+                    attach_button = driver.find_element(By.CSS_SELECTOR, 'button[aria-label="Adjuntar"]')
+                    attach_button.click()
                 except:
-                    pass
-            
-            # Método 3: Buscar el botón por su aria-label
-            if not encuesta_enviada:
-                try:
-                    send_button = WebDriverWait(driver, 5).until(
-                        EC.element_to_be_clickable((By.XPATH, '//div[@aria-label="Enviar"]'))
-                    )
-                    driver.execute_script("arguments[0].click();", send_button)
-                    print("Encuesta enviada con aria-label ✅")
-                    time.sleep(2)
-                    encuesta_enviada = True
-                except:
-                    pass
-            
-            # Método 4: Intentar con ENTER en el cuerpo del documento
-            if not encuesta_enviada:
-                try:
-                    body = driver.find_element(By.TAG_NAME, 'body')
-                    body.send_keys(Keys.ENTER)
-                    print("Encuesta enviada con ENTER ✅")
-                    time.sleep(2)
-                    encuesta_enviada = True
-                except:
-                    pass
-            
-            # Método 5: Intentar con JavaScript directo
-            if not encuesta_enviada:
-                try:
-                    driver.execute_script("""
-                        var sendButton = document.querySelector('span[data-icon="wds-ic-send-filled"]');
-                        if (!sendButton) {
-                            sendButton = document.querySelector('div[aria-label="Enviar"]');
-                        }
-                        if (sendButton) {
-                            sendButton.click();
-                        }
-                    """)
-                    print("Encuesta enviada con JavaScript directo ✅")
-                    time.sleep(2)
-                    encuesta_enviada = True
-                except:
-                    pass
-            
-            if not encuesta_enviada:
-                print("No se pudo enviar la encuesta después de intentar todos los métodos")
-            
-            # --- ESPERA ALEATORIA DESPUÉS DE ENVIAR ENCUESTA ---
-            wait_time = random.uniform(25, 40)
-            print(f"Esperando {wait_time:.2f} segundos antes del siguiente contacto...")
-            time.sleep(wait_time)
-            
-        except Exception as e:
-            print(f"Error al preparar la encuesta: {e}")
-            # Continuar con el siguiente contacto aunque falle la encuesta
-            pass
-       # --- Enviar sticker ---
-        try:
-            # Llamar a la función de enviar sticker
-            sticker_enviado = enviar_sticker()
-            if sticker_enviado:
-                print("Sticker enviado exitosamente ✅")
-            else:
-                print("No se pudo enviar el sticker, continuando...")
+                    # Selector 3: Por title
+                    attach_button = driver.find_element(By.CSS_SELECTOR, 'div[title="Adjuntar"]')
+                    attach_button.click()
             
             time.sleep(2)
             
+            # 2. Buscar opción de encuesta
+            print("Buscando opción de encuesta...")
+            
+            # Método A: Buscar por texto "Encuesta" o "Poll"
+            try:
+                elementos_texto = driver.find_elements(By.XPATH, "//*[contains(text(), 'Encuesta') or contains(text(), 'Poll')]")
+                if elementos_texto:
+                    # Filtrar elementos visibles
+                    elementos_visibles = [e for e in elementos_texto if e.is_displayed()]
+                    if elementos_visibles:
+                        elementos_visibles[0].click()
+                        print("✅ Encuesta encontrada por texto")
+                    else:
+                        raise Exception("No visible")
+            except:
+                # Método B: Buscar por aria-label
+                try:
+                    poll_option = driver.find_element(By.CSS_SELECTOR, 'div[aria-label*="Encuesta" i], div[aria-label*="Poll" i]')
+                    poll_option.click()
+                    print("✅ Encuesta encontrada por aria-label")
+                except:
+                    # Método C: Buscar en todos los divs
+                    try:
+                        divs = driver.find_elements(By.CSS_SELECTOR, "div")
+                        for div in divs:
+                            try:
+                                if div.is_displayed() and ("encuesta" in div.text.lower() or "poll" in div.text.lower()):
+                                    div.click()
+                                    print("✅ Encuesta encontrada en div")
+                                    break
+                            except:
+                                continue
+                    except:
+                        print("❌ No se encontró opción de encuesta")
+                        raise Exception("Encuesta no disponible")
+            
+            time.sleep(3)
+            
+            # 3. Escribir la pregunta
+            print("Escribiendo pregunta...")
+            
+            # Buscar todos los campos editables
+            campos_editables = WebDriverWait(driver, 10).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div[contenteditable="true"]'))
+            )
+            
+            if len(campos_editables) > 0:
+                # Primer campo es la pregunta
+                campos_editables[0].click()
+                time.sleep(0.5)
+                
+                # Escribir pregunta
+                for caracter in encuesta["pregunta"]:
+                    pyperclip.copy(caracter)
+                    campos_editables[0].send_keys(paste_key, 'v')
+                    time.sleep(random.uniform(0.03, 0.1))
+                
+                time.sleep(1)
+                
+                # 4. Escribir primera opción
+                if len(campos_editables) > 1:
+                    campos_editables[1].click()
+                    time.sleep(0.5)
+                    
+                    for caracter in encuesta["opciones"][0]:
+                        pyperclip.copy(caracter)
+                        campos_editables[1].send_keys(paste_key, 'v')
+                        time.sleep(random.uniform(0.03, 0.1))
+                    
+                    time.sleep(1)
+                    
+                    # 5. Añadir y escribir segunda opción - CORRECCIÓN
+                    print("Añadiendo segunda opción...")
+                    try:
+                        # IMPORTANTE: Esperar a que el botón esté disponible
+                        time.sleep(1)
+                        
+                        # Buscar botón "Añadir opción" o "Add option"
+                        add_buttons = driver.find_elements(By.XPATH, "//*[contains(text(), 'Añadir') or contains(text(), 'Add') or contains(text(), 'añadir')]")
+                        
+                        if add_buttons:
+                            for btn in add_buttons:
+                                try:
+                                    # Verificar que esté visible y sea clickeable
+                                    if btn.is_displayed() and btn.is_enabled():
+                                        print(f"   Botón encontrado: {btn.text}")
+                                        btn.click()
+                                        print("✅ Segunda opción añadida")
+                                        time.sleep(2)  # Esperar a que aparezca nuevo campo
+                                        break
+                                except:
+                                    continue
+                        
+                        # Si no se encuentra, intentar método alternativo
+                        if not add_buttons:
+                            # Buscar por tipo de botón específico
+                            try:
+                                add_btn = driver.find_element(By.CSS_SELECTOR, 'button[aria-label*="añadir" i], button[aria-label*="add" i]')
+                                add_btn.click()
+                                print("✅ Segunda opción añadida (aria-label)")
+                                time.sleep(2)
+                            except:
+                                # Intentar con JavaScript
+                                driver.execute_script("""
+                                    var buttons = document.querySelectorAll('button, div[role="button"]');
+                                    for(var i=0; i<buttons.length; i++) {
+                                        var text = buttons[i].textContent || buttons[i].innerText;
+                                        if(text && (text.includes('Añadir') || text.includes('Add'))) {
+                                            buttons[i].click();
+                                            break;
+                                        }
+                                    }
+                                """)
+                                print("✅ Segunda opción añadida (JavaScript)")
+                                time.sleep(2)
+                                
+                    except Exception as e:
+                        print(f"⚠️  Error añadiendo opción: {e}")
+                        # Intentar continuar de todos modos
+                    
+                    # 6. Escribir segunda opción - CORRECCIÓN
+                    print("Escribiendo segunda opción...")
+                    time.sleep(1)
+                    
+                    # Volver a buscar campos después de añadir
+                    try:
+                        campos_editables = driver.find_elements(By.CSS_SELECTOR, 'div[contenteditable="true"]')
+                        print(f"   Campos disponibles: {len(campos_editables)}")
+                        
+                        if len(campos_editables) > 2:
+                            # El tercer campo debería ser la segunda opción
+                            campos_editables[2].click()
+                            time.sleep(0.5)
+                            
+                            # Limpiar campo por si tiene texto predeterminado
+                            campos_editables[2].send_keys(Keys.COMMAND + "a" if platform.system() == "Darwin" else Keys.CONTROL + "a")
+                            campos_editables[2].send_keys(Keys.DELETE)
+                            time.sleep(0.5)
+                            
+                            for caracter in encuesta["opciones"][1]:
+                                pyperclip.copy(caracter)
+                                campos_editables[2].send_keys(paste_key, 'v')
+                                time.sleep(random.uniform(0.03, 0.1))
+                            
+                            print("✅ Segunda opción escrita")
+                        elif len(campos_editables) == 2:
+                            # Si solo hay 2 campos, usar el segundo para la segunda opción
+                            campos_editables[1].click()
+                            time.sleep(0.5)
+                            
+                            # Escribir " / " para separar opciones
+                            campos_editables[1].send_keys(" / ")
+                            
+                            for caracter in encuesta["opciones"][1]:
+                                pyperclip.copy(caracter)
+                                campos_editables[1].send_keys(paste_key, 'v')
+                                time.sleep(random.uniform(0.03, 0.1))
+                            
+                            print("✅ Opciones combinadas en un campo")
+                    except Exception as e:
+                        print(f"⚠️  Error escribiendo segunda opción: {e}")
+                
+                time.sleep(1)
+                
+                # 7. Enviar encuesta - CLICK DIRECTO AL BOTÓN ESPECÍFICO
+                print("Enviando encuesta...")
+                encuesta_enviada = False
+                
+                # MÉTODO PRINCIPAL: Usar el selector EXACTO del botón "Enviar"
+                try:
+                    # Selector 1: Botón con aria-label="Enviar" Y el icono específico dentro
+                    send_button = WebDriverWait(driver, 5).until(
+                        EC.element_to_be_clickable((By.XPATH, '//div[@aria-label="Enviar" and .//span[@data-icon="wds-ic-send-filled"]]'))
+                    )
+                    driver.execute_script("arguments[0].click();", send_button)  # Click con JavaScript (más confiable)
+                    print("✅ ENCUESTA ENVIADA (clic en botón específico)")
+                    encuesta_enviada = True
+                    time.sleep(3)  # Esperar a que la UI se actualice
+                    
+                except Exception as e1:
+                    print(f"   ❌ Intento 1 falló: {e1}")
+                    
+                    # MÉTODO ALTERNATIVO: Buscar solo por el icono único
+                    try:
+                        send_icon = WebDriverWait(driver, 3).until(
+                            EC.element_to_be_clickable((By.CSS_SELECTOR, 'span[data-icon="wds-ic-send-filled"]'))
+                        )
+                        # Subir hasta el botón padre que se puede clickear
+                        send_button = driver.execute_script("""
+                            var icon = arguments[0];
+                            return icon.closest('div[role="button"]');
+                        """, send_icon)
+                        if send_button:
+                            send_button.click()
+                            print("✅ ENCUESTA ENVIADA (vía icono)")
+                            encuesta_enviada = True
+                            time.sleep(3)
+                    except Exception as e2:
+                        print(f"   ❌ Intento 2 falló: {e2}")
+                
+                if encuesta_enviada:
+                    print("✅ Encuesta enviada correctamente")
+                    # VERIFICACIÓN: Esperar a que desaparezca la ventana de encuesta
+                    try:
+                        WebDriverWait(driver, 5).until(
+                            EC.invisibility_of_element_located((By.XPATH, '//div[@aria-label="Enviar" and .//span[@data-icon="wds-ic-send-filled"]]'))
+                        )
+                        print("✅ Ventana de encuesta cerrada confirmada")
+                    except:
+                        print("⚠️  La ventana de encuesta podría no haberse cerrado")
+                else:
+                    print("❌ ERROR CRÍTICO: No se pudo enviar la encuesta")
+                    # Opcional: Tomar captura de pantalla para debug
+                    # driver.save_screenshot("error_encuesta_no_enviada.png")
+            
         except Exception as e:
-            print(f"Error al enviar sticker: {e}")
-            # Continuar aunque falle el sticker
-        # --- Espera aleatoria entre contactos ---
+            print(f"No se pudo completar el proceso de encuesta: {e}")
+            # Continuar aunque falle la encuesta
+        # --- Espera aleatoria ---
         wait_time = random.uniform(25, 40)
         print(f"Esperando {wait_time:.2f} segundos antes del siguiente contacto...")
         time.sleep(wait_time)
@@ -454,6 +339,6 @@ for numero_telefono in contactos:
         print(f"Ocurrió un error con el contacto {numero_telefono}: {e}")
         print("Saltando al siguiente contacto...")
 
-print("Todos los mensajes han sido procesados.")
+print("Todos los mensajes y encuestas han sido procesados.")
 time.sleep(3)
 driver.quit()
