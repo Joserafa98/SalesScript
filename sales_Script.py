@@ -53,8 +53,9 @@ def validar_numero(numero):
 
 def esperar_whatsapp():
     try:
+        # Aquí es donde cambiamos el selector para que lo detecte al instante
         WebDriverWait(driver, 60).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'div[contenteditable="true"][data-tab="3"]'))
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'div[aria-label="Lista de chats"], div[role="grid"]'))
         )
         print("✅ WhatsApp listo")
         time.sleep(3)
